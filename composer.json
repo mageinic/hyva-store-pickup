@@ -1,0 +1,30 @@
+{
+    "name": "mageinic/hyva-store-pickup",
+    "description": "MageINIC Store Pickup is a part of MageINIC Store Pickup extension. This extension extends Store Pickup compatibility with Hyva Theme.",
+    "type": "magento2-module",
+    "license": [
+        "OSL-3.0",
+        "AFL-3.0"
+    ],
+    "version": "1.0.0",
+    "require": {
+        "magento/framework": "*",
+        "mageinic/store-pickup": "1.0.*",
+        "hyva-themes/magento2-compat-module-fallback": "*"
+    },
+    "authors": [
+        {
+            "name": "MageINIC",
+            "email": "support@mageinic.com",
+            "homepage": "https://www.mageinic.com"
+        }
+    ],
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Hyva\\MageINICStorePickup\\": ""
+        }
+    }
+}

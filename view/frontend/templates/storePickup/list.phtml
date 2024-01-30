@@ -1,0 +1,287 @@
+<?php
+/**
+ * MageINIC
+ * Copyright (C) 2023 MageINIC <support@mageinic.com>
+ *
+ * NOTICE OF LICENSE
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program. If not, see https://opensource.org/licenses/gpl-3.0.html.
+ *
+ * Do not edit or add to this file if you wish to upgrade this extension to newer
+ * version in the future.
+ *
+ * @category MageINIC
+ * @package MageINIC_StorePickup
+ * @copyright Copyright (c) 2023 MageINIC (https://www.mageinic.com/)
+ * @license https://opensource.org/licenses/gpl-3.0.html GNU General Public License,version 3 (GPL-3.0)
+ * @author MageINIC <support@mageinic.com>
+ */
+
+use MageINIC\StorePickup\Block\StorePickup\ListStorePickup;
+use MageINIC\StorePickup\Model\StorePickup;
+use MageINIC\StorePickup\ViewModel\StorePickup as ViewModel;
+use Magento\Framework\Escaper;
+use Magento\Framework\View\Helper\SecureHtmlRenderer;
+
+/**
+ * @var ListStorePickup $block
+ * @var Escaper $escaper
+ * @var SecureHtmlRenderer $secureRenderer
+ * @var ViewModel $viewModel
+ */
+
+$viewModel = $block->getViewModel();
+$storeList = $block->getCollection();
+$storeMarkers = $viewModel->getGoogleMarkers($storeList);
+$storeDetails = $viewModel->getGoogleMarkersDetails($storeList);
+$maxRadius = $viewModel->getMaxRadius();
+?>
+<?php if (count($storeList)): ?>
+    <div class="mageinic-main-container" style="clear:both;">
+        <div class="mageinic-locator-map-container" id="mageinic-locator-map-container">
+
+            <div class="mageinic-locator-search-container border-b border-solid border-[#ccc] pb-4 mb-4">
+                <div class="mageinic-locator-block -current mageinic-locator-current-location">
+                    <div class="mageinic-locator-wrapper">
+                        <label>
+                            <input id="search-text" type="text" value=""
+                                   class="w-full mageinic-locator-text pac-target-input controls"
+                                   placeholder="Enter your search location here">
+                        </label>
+                    </div>
+                </div>
+                <div class="mageinic-locator-block -search mageinic-locator-search-radius">
+                    <label class="mageinic-locator-title" id="range_radius" for="radius">
+                        <?= $escaper->escapeHtml(__('Search Radius')) ?>
+                    </label>
+                    <label><?= $escaper->escapeHtml(__(', %1', $viewModel->getRadiusLength())) ?></label>
+                    <input type="hidden" id="radius-measurement"
+                           value="<?= $escaper->escapeHtmlAttr($viewModel->getDefaultRadius()) ?>">
+                    <div class="mageinic-locator-wrapper">
+                        <div id="mageinic-locator-range-slider">
+                            <label for="radius-select">
+                                <input type="range" name="radius" id="radius-select"
+                                       min="0" max="<?= $escaper->escapeJs($maxRadius) ?>" value="0">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="mageinic-locator-block -storelist mageinic-locator-store-list">
+            <div class="mageinic-locator-wrapper">
+                <div class="mageinic-locator-stores-wrapper">
+                    <?php /** @var StorePickup $store */ ?>
+                    <?php foreach ($storeList as $store): ?>
+                        <div class="mageinic-locator-store-desc" name="leftLocation">
+                            <div class="mageinic-locator-block">
+                                <div class="mageinic-locator-image" style="background-image:
+                                    url('<?= $escaper->escapeUrl($viewModel->getStoreImageUrl($store)) ?>')">
+                                </div>
+                                <div class="mageinic-locator-store-information">
+                                    <div class="mageinic-locator-title">
+                                        <a class="mageinic-locator-link"
+                                           href="<?= $escaper->escapeUrl($store->getUrl()) ?>"
+                                           title="<?= $escaper->escapeHtmlAttr($store->getName()) ?>" target="_blank">
+                                            <?= $escaper->escapeHtml($store->getName()) ?></a>
+                                    </div>
+                                    <span><?= $escaper->escapeHtml(__('City: ')) ?>
+                                        <?= $escaper->escapeHtml($store->getCity()) ?></span>
+                                    <span><?= $escaper->escapeHtml(__('Zip: ')) ?>
+                                        <?= $escaper->escapeHtml($store->getPostcode()) ?></span>
+                                    <span><?= $escaper->escapeHtml(__('Address: ')) ?>
+                                        <?= $escaper->escapeHtml($store->getAddress()) ?></span>
+                                </div>
+                            </div>
+                            <div class="mageinic-locator-schedule-container">
+                                <div class="mageinic-locator-week" id="schedule"
+                                     x-data="{ expanded: false }">
+                                    <div class="mageinic-locator-today" data-role="title">
+                                        <strong><?= $escaper->escapeHtml(__('Working Time List')) ?></strong>
+                                        <span class="mageinic-locator-time">
+                                            <span class="mageinic-locator-arrow -down"
+                                                  @click="expanded = ! expanded">▼</span>
+                                        </span>
+                                    </div>
+                                    <div class="mageinic-locator-schedule-table" x-show="expanded" x-collapse>
+                                        <?= /* @noEscape */
+                                        $viewModel->getScheduleList($store) ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+            <div class="mageinic-locator-block-map">
+                <div id="mageinic-canvas-map" x-init="initializeMap()"></div>
+            </div>
+        </div>
+        <?php if ($block->getPagerHtml()): ?>
+            <div class="toolbar bottom"><?= /* @noEscape */$block->getPagerHtml() ?></div>
+        <?php endif ?>
+    </div>
+    <script>
+        // Constants
+        const METERS_PER_MILE = 1609.34;
+        const METERS_PER_KILOMETER = 1000;
+        const markers = <?= /* @noEscape */ $viewModel->serialize($storeMarkers) ?>;
+        const infoWindowContent = <?= /* @noEscape */ $viewModel->serialize($storeDetails) ?>;
+        const length = "<?= /* @noEscape */ $viewModel->getRadiusLength() ?>";
+
+        /**
+         * Initialize the map with markers
+         */
+        function initializeMap() {
+            const mapOptions = {
+                zoom: 6,
+                scrollwheel: true,
+                draggable: true,
+                mapTypeControl: true,
+                panControl: true,
+                zoomControl: true,
+                scaleControl: true,
+                streetViewControl: true,
+                overviewMapControl: true,
+                rotateControl: true,
+                mapTypeId: google.maps.MapTypeId.ROADMAP
+            };
+
+            const map = new google.maps.Map(document.getElementById("mageinic-canvas-map"), mapOptions);
+            const bounds = new google.maps.LatLngBounds();
+            const infoWindow = new google.maps.InfoWindow();
+
+            markers.forEach((markerData, i) => {
+                const [title, lat, lng] = markerData;
+                const position = new google.maps.LatLng(lat, lng);
+                bounds.extend(position);
+
+                const marker = new google.maps.Marker({
+                    position,
+                    map,
+                    title
+                });
+
+                google.maps.event.addListener(marker, 'click', () => {
+                    infoWindow.setContent(infoWindowContent[i][0]);
+                    infoWindow.open(map, marker);
+                });
+            });
+
+            map.fitBounds(bounds);
+            map.setZoom(10);
+
+            if (length === 'km' || length === 'mi') {
+                addRadiusSelection(map);
+            }
+
+            addSearchBox(map);
+        }
+
+        /**
+         * Add radius selection functionality to the map.
+         *
+         * @param {google.maps.Map} map - The Google Map instance.
+         */
+        function addRadiusSelection(map) {
+            let circle;
+
+            const radiusSelect = document.getElementById('radius-select');
+            const radiusValue = document.querySelector('.radius-value');
+
+            radiusSelect.addEventListener('change', () => {
+                const selectedRadius = parseFloat(radiusSelect.value);
+
+                if (circle && circle.setMap) {
+                    circle.setMap(null);
+                }
+
+                const center = map.getCenter();
+                const radius = (length === 'km')
+                    ? selectedRadius * METERS_PER_KILOMETER : selectedRadius * METERS_PER_MILE;
+
+                circle = new google.maps.Circle({
+                    center,
+                    strokeColor: 'rgba(0,72,255,0.26)',
+                    strokeOpacity: 0.8,
+                    strokeWeight: 2,
+                    fillColor: 'rgba(0,149,255,0.44)',
+                    fillOpacity: 0.35,
+                    radius,
+                    map
+                });
+
+                map.fitBounds(circle.getBounds());
+            });
+        }
+
+        /**
+         * Add search box functionality to the map.
+         *
+         * @param {google.maps.Map} map - The Google Map instance.
+         */
+        function addSearchBox(map) {
+            const input = document.getElementById('search-text');
+            const searchBox = new google.maps.places.SearchBox(input);
+            // map.controls[google.maps.ControlPosition.TOP_LEFT].push(input);
+
+            map.addListener('bounds_changed', () => {
+                searchBox.setBounds(map.getBounds());
+            });
+
+            searchBox.addListener('places_changed', () => {
+                const places = searchBox.getPlaces();
+
+                if (places.length === 0) {
+                    return;
+                }
+
+                markers.forEach((marker) => {
+                    marker.setMap(null);
+                });
+
+                const bounds = new google.maps.LatLngBounds();
+                places.forEach((place) => {
+                    if (!place.geometry) {
+                        console.log("Returned place contains no geometry");
+                        return;
+                    }
+
+                    if (place.geometry.viewport) {
+                        bounds.union(place.geometry.viewport);
+                    } else {
+                        bounds.extend(place.geometry.location);
+                    }
+
+                    if (circle && circle.setMap) {
+                        circle.setMap(null);
+                    }
+
+                    const radiusSelect = document.getElementById('radius-select');
+                    const value = radiusSelect.value;
+                    const radius = (length === 'km') ? value * METERS_PER_KILOMETER : value * METERS_PER_MILE;
+
+                    circle = new google.maps.Circle({
+                        center: place.geometry.location,
+                        radius,
+                        map
+                    });
+
+                    map.fitBounds(circle.getBounds());
+                });
+
+                map.fitBounds(bounds);
+            });
+        }
+    </script>
+<?php else: ?>
+    <div class="message info empty">
+        <span><?= $escaper->escapeHtml(__('Pickup Store are not added to this Store.')) ?></span>
+    </div>
+<?php endif; ?>
