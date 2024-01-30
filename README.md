@@ -1,14 +1,10 @@
-# Store Pickup User Guide
+# Hyvä Store Pickup
+
+**Hyvä Store Pickup is a part of MageINIC Store Pickup extension that adds Hyvä features.** This extension extends Store Pickup definitions.
 
 ## 1. How to install
 
-### Method 1: Install ready-to-paste package
-
-- Download the latest version at [Store Pickup for Magento 2](https://www.mageinic.com/store-pickup.html)
-
-### Method 2: Install via composer [Recommend]
-
-Run the following command in Magento 2 root folder
+Run the following command in Magento 2 root folder:
 
 ```
 composer require mageinic/hyva-store-pickup
@@ -22,13 +18,14 @@ php bin/magento cache:flush
 ```
 
 **Note:**
-Magento 2 Hyva StorePickup requires installing [MageINIC Store Pickup](https://github.com/mageinic/store-pickup) in your Magento installation.
+Magento 2 Store Pickup requires installing [MageINIC Store Pickup](https://github.com/mageinic/store-pickup) in your Magento installation.
 
-## 2. How to use
+**Or Install via composer [Recommend]**
+```
+composer require mageinic/store-pickup
+```
 
-- Please refer to the `Store Pickup Extension User Guide.pdf` file for instructions on how to use the extension.
-
-## 3. Get Support
+## 2. Get Support
 
 - Feel free to [contact us](https://www.mageinic.com/contact.html) if you have any further questions.
 - Like this project, Give us a **Star**
